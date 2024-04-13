@@ -40,7 +40,7 @@ class ImageObject(BaseObject):
             raise ValueError(f"Expected a 2D array for 'array' (was {len(array.shape)}-dimensional)")
 
         # Save attributes
-        self.array: np.ndarray = array
+        self.__array: np.ndarray = array
         self.normal: np.ndarray = np.array(normal)[:3]
         self.offset: np.ndarray = np.array(offset)[:3]
 
@@ -80,7 +80,13 @@ class ImageObject(BaseObject):
         self.__vao: int = -1
         self.__vbo: int = -1
 
+        # Texture attributes
+        self.__tex: int = -1
         self.colormap = cmap
+
+    @property
+    def array(self) -> np.ndarray:
+        return self.__array
 
     @property
     def vao(self) -> int:
@@ -89,6 +95,10 @@ class ImageObject(BaseObject):
     @property
     def vbo(self) -> int:
         return self.__vbo
+
+    @property
+    def tex(self) -> int:
+        return self.__tex
 
     @property
     def cmap_tex(self) -> int:
@@ -105,8 +115,6 @@ class ImageObject(BaseObject):
         in vec3 TexSize;
         
         // Uniforms
-        uniform float vmin;
-        uniform float vmax;
         uniform sampler1D cmap;
         uniform sampler2D tex;
 
@@ -138,7 +146,7 @@ class ImageObject(BaseObject):
         }
         """
 
-    def setBuffers(self, *arrays: np.ndarray):
+    def setBuffers(self):
         """
         Sets the internal buffer objects to the provided arrays
         """
@@ -146,9 +154,42 @@ class ImageObject(BaseObject):
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
         gl.glBufferData(gl.GL_ARRAY_BUFFER, 0, self.triangles, gl.GL_STATIC_DRAW)
 
+    def createTexture(self):
+        """
+        Creates and configures the texture object used to store to the image
+        """
+        if self.tex is None or self.tex == -1:
+            self.__tex = gl.glGenTextures(1)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.tex)
+        gl.glTexParameterf(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_S, gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameterf(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_WRAP_T, gl.GL_CLAMP_TO_EDGE)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+
+    def setTexture(self, array: np.ndarray):
+        """
+        Sets the internal image texture
+        """
+        # Prepare new texture if not set
+        if self.tex is None or self.tex == -1:
+            self.createTexture()
+
+        # Set texture data
+        data = ((np.array(array)-self.vmin)/(self.vmax-self.vmin)).flatten().astype(np.float32)
+        height, width = array.shape
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.tex)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_R32F, width, height, 0, gl.GL_RED, gl.GL_FLOAT, data)
+
     def initialize(self):
+        """Initializes the object/class in OpenGL if it isn't already"""
+        # Standard initialization
         super().initialize()
+
+        # Set vertex object data
         self.setBuffers()
+
+        # Set texture data
+        self.setTexture(self.array)
 
     def createBuffers(self):
         """Creates the internal buffer objects used in the shader"""
@@ -193,5 +234,14 @@ class ImageObject(BaseObject):
         # Use shader and set camera/projection uniforms
         super().render(camera, projection)
 
-        # Render triangles forming this object
+        # Bind appropriate buffers
+        gl.glBindVertexArray(self.vao)
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glBindTexture(gl.GL_TEXTURE_1D, self.cmap_tex)
+        gl.glActiveTexture(gl.GL_TEXTURE1)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.tex)
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
+
+        # Draw triangles
+
 

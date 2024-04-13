@@ -94,7 +94,7 @@ class BaseObject:
         # Compile shader programs
         cls.__shader_program = cls.compileShaders()
 
-    def setBuffers(self, *arrays: np.ndarray):
+    def setBuffers(self):
         """
         Sets the internal buffer objects to the provided arrays.  Override in subclass.
         """
