@@ -35,16 +35,30 @@ class BaseObject:
     @staticmethod
     def getFragmentShaderSource() -> str:
         """Returns the source code for the fragment shader"""
-        pass
+        return """\
+        #version 430 core
+        // Shader inputs and outputs
+        out vec4 FragColor;
+        in vec3 FragPos;
+        
+        void main()
+        {
+            FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+        }
+        """
 
     @staticmethod
     def getVertexShaderSource() -> str:
         """Returns the source code for the vertex shader"""
         return """\
         #version 420 core
+        // Inputs provided by buffer objects
+        layout (location = 0) in vec3 position;
         
+        // Shader outputs
         out vec3 FragPos;
         
+        // Uniforms
         uniform mat4 projection;
         uniform mat4 view;
         
@@ -80,10 +94,23 @@ class BaseObject:
         # Compile shader programs
         cls.__shader_program = cls.compileShaders()
 
+    def setBuffers(self, *arrays: np.ndarray):
+        """
+        Sets the internal buffer objects to the provided arrays.  Override in subclass.
+        """
+        pass
+
+    def createBuffers(self):
+        """Creates the internal buffer objects used in the shader.  Override in subclass"""
+        pass
+
     def initialize(self):
         """Initializes the object/class in OpenGL if it isn't already"""
         if self.initialized:  # Don't try to initialize more than once
             return
+
+        # Create buffer objects
+        self.createBuffers()
 
         # Perform class initialization first, if not already done
         self.class_initialize()
