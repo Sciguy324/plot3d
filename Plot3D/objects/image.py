@@ -6,6 +6,7 @@ from typing import Tuple
 import ctypes
 import numpy as np
 from .base import BaseObject
+from ..colormaps import Colormap, viridis
 from ..camera import Camera, Projection
 import OpenGL.GL as gl
 
@@ -72,9 +73,11 @@ class ImageObject(BaseObject):
 
         triangles = np.zeros((len(positions), 5), dtype=np.float32)
         triangles[:, 0] = positions.T[0]
-        triangles[:, 0] = positions.T[1]
-        triangles[:, 0] = positions.T[2]
-        self.triangles = triangles.flatten()
+        triangles[:, 1] = positions.T[1]
+        triangles[:, 2] = positions.T[2]
+        triangles[:, 3] = uv.T[0]
+        triangles[:, 4] = uv.T[1]
+        self.triangles = triangles
 
         # Vertex buffer attributes
         self.__vao: int = -1
@@ -82,7 +85,7 @@ class ImageObject(BaseObject):
 
         # Texture attributes
         self.__tex: int = -1
-        self.colormap = cmap
+        self.colormap = viridis if cmap is None else cmap
 
     @property
     def array(self) -> np.ndarray:
@@ -152,7 +155,7 @@ class ImageObject(BaseObject):
         """
         # Bind and set buffer to triangle data
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, 0, self.triangles, gl.GL_STATIC_DRAW)
+        gl.glBufferData(gl.GL_ARRAY_BUFFER, 0, self.triangles.flatten(), gl.GL_STATIC_DRAW)
 
     def createTexture(self):
         """
@@ -243,5 +246,4 @@ class ImageObject(BaseObject):
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
 
         # Draw triangles
-
-
+        gl.glDrawArrays(gl.GL_TRIANGLES, 0, len(self.triangles))
