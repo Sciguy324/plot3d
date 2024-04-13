@@ -38,6 +38,11 @@ class Canvas:
         self._projection = PerspectiveProjection()
         self.camera = Camera()
 
+    def resetView(self):
+        """Resets the camera view"""
+        # TODO: Implement dimension calculation
+        self.camera.focusView([0.0, 0.0, 0.0], [200.0, 200.0, 200.0])
+
     @property
     def projection(self) -> Projection:
         return self._projection
