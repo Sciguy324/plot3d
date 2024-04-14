@@ -38,6 +38,18 @@ class Projection:
         """Returns the 4x4 matrix defining this projection"""
         return np.identity(4)
 
+    def optimalZoom(self, radius: float, view_dist: float) -> float:
+        """
+        Returns an acceptable scale factor at which a sphere of some radius some distance away will fit within the viewport
+
+        Arguments:
+            radius (float): Radius of the spherical object
+            view_dist (float): Distance from object
+
+        Returns (float): Acceptable scale factor
+        """
+        raise NotImplementedError("Override in subclass")
+
 
 @dataclass
 class PerspectiveProjection(Projection):
@@ -61,6 +73,18 @@ class PerspectiveProjection(Projection):
                          [0.0, 0.0, -2*self.far_plane*self.near_plane/(self.far_plane-self.near_plane), 0.0]],
                         dtype=np.float32)
 
+    def optimalZoom(self, radius: float, view_dist: float) -> float:
+        """
+        Returns an acceptable scale factor at which a sphere of some radius some distance away will fit within the viewport
+
+        Arguments:
+            radius (float): Radius of the spherical object
+            view_dist (float): Distance from object
+
+        Returns (float): Acceptable scale factor
+        """
+        return radius/view_dist*1.5
+
 
 @dataclass
 class OrthographicProjection(Projection):
@@ -83,6 +107,18 @@ class OrthographicProjection(Projection):
                          [0.0, 0.0, -1/(self.far_plane-self.near_plane), 0.0],
                          [0.0, 0.0, -self.near_plane/(self.far_plane-self.near_plane), 1.0]],
                         dtype=np.float32)
+
+    def optimalZoom(self, radius: float, view_dist: float) -> float:
+        """
+        Returns an acceptable scale factor at which a sphere of some radius some distance away will fit within the viewport
+
+        Arguments:
+            radius (float): Radius of the spherical object
+            view_dist (float): Distance from object
+
+        Returns (float): Acceptable scale factor
+        """
+        return radius/max(self.width, self.height) * 1.5
 
 
 @dataclass
@@ -126,7 +162,7 @@ class Camera:
         # Transform into coordinate system relative to the camera's current direction
         theta, phi = np.radians(self.theta), np.radians(self.phi)
         transform = np.array([[0.0, np.cos(theta), np.sin(theta)*np.sin(phi)],
-                              [0.0, 0.0, np.cos(phi)],
+                              [0.0,           0.0,               np.cos(phi)],
                               [0.0, np.sin(theta), -np.cos(theta)*np.sin(phi)]])
         transformed_delta = transform @ np.array([0.0, horizontal, -vertical])
 
@@ -187,22 +223,32 @@ class Camera:
         if Direction.down & direction:
             self.y -= delta
 
-    def focusView(self, center: Tuple[float, float, float], radius: float):
+    def focusView(self, center: Tuple[float, float, float], radius: float, projection: Projection):
         """
         Resets the camera to focus on an object
 
         Arguments:
             center (Tuple[float, float, float]): 3-tuple of coordinates to focus pivot on
             radius (float): Radius of the region to focus on
+            projection (Projection): Projection used when converting the 3D space into the camera's 2D view spaces
         """
         # Move camera to focus on center of mass
         self.cam_pos = center
 
-        # Set camera angle
+        # Reset camera properties
         self.theta, self.phi = 315.0, 45.0
+        self.zoom = 0.0
 
         # Compute a better zoom that fits the structure
-        scale = radius / self.pivot_dist * 1.5
+        # theta = np.radians(self.theta)
+        # test_vector = np.array([radius*np.cos(theta), 0.0, radius*np.sin(theta), 1.0])
+        # projected = projection.matrix.T @ self.matrix @ test_vector
+        # projected /= projected[-1]
+        # scale = np.linalg.norm(projected[:3])*2*1.5
+        # For perspective: scale = radius / self.pivot_dist * 1.5
+        # For orthographic: scale = 1/3.5
+        # -> 3.5/1.5 = 7/3
+        scale = projection.optimalZoom(radius, self.pivot_dist)
         self.zoom = np.log10(scale)
 
     @property

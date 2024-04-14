@@ -229,5 +229,6 @@ class QtWindow(qt.QMainWindow):
 
     def show(self):
         """Show the main viewing window"""
+        self.view_widget.canvas.projection.setSize(self.height(), self.width())
         self.view_widget.canvas.resetView()
         super().show()
