@@ -150,7 +150,7 @@ class QtGLWidget(qt.QOpenGLWidget):
     def wheelEvent(self, event) -> None:
         """Mouse scroll wheel event handler"""
         # Zoom in/out
-        self.move_state.zoom = event.angleDelta().y()
+        self.move_state.zoom += event.angleDelta().y()
 
     def applyMoveStates(self):
         """Applies the current movement control state"""
