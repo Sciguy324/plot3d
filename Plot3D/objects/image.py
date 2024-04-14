@@ -20,11 +20,11 @@ class ImageObject(BaseObject):
 
     __current_projection: np.ndarray = np.identity(4)
 
-    def __init__(self, array: np.ndarray, normal: Tuple[float, float, float], offset: Tuple[float, float, float], width: float = None, height: float = None, vmin: float = None, vmax: float = None, cmap: Colormap = None):
+    def __init__(self, array: np.ndarray, offset: Tuple[float, float, float], normal: str = 'z', width: float = None, height: float = None, vmin: float = None, vmax: float = None, cmap: Colormap = None):
         """
         Arguments:
             array (np.ndarray): A 2D numpy array containing the image to show
-            normal (Tuple[float, float, float]): Normal vector that the image face is pointing in
+            normal (str): Direction that face's normal vector points in.  Must be either, 'x', 'y', or 'z'
             offset (Tuple[float, float, float]): Location of the center of the image
             width (float): Width of rendered image.  Defaults to the number of columns in array if not provided.
             height (float): Height of rendered image.  Defaults to the number of rows in array if not provided
@@ -42,7 +42,6 @@ class ImageObject(BaseObject):
 
         # Save attributes
         self.__array: np.ndarray = array
-        self.normal: np.ndarray = np.array(normal)[:3]
         self.offset: np.ndarray = np.array(offset)[:3]
 
         self.width: float = array.shape[1] if width is None else width
@@ -52,16 +51,40 @@ class ImageObject(BaseObject):
         self.vmax = np.max(self.array) if vmax is None else vmax
 
         # Generate triangles for rendering
-        positions = np.array([[0.0, 0.0, 0.0],  # First triangle
-                              [1.0, 0.0, 0.0],
-                              [0.0, 1.0, 0.0],
-                              [1.0, 1.0, 0.0],  # Second triangle
-                              [0.0, 1.0, 0.0],
-                              [1.0, 0.0, 0.0]], dtype=np.float32)
+        if normal == 'z':
+            positions = np.array([[0.0, 0.0, 0.0],  # First triangle
+                                  [1.0, 0.0, 0.0],
+                                  [0.0, 1.0, 0.0],
+                                  [1.0, 1.0, 0.0],  # Second triangle
+                                  [0.0, 1.0, 0.0],
+                                  [1.0, 0.0, 0.0]], dtype=np.float32)
+            positions -= np.array([0.5, 0.5, 0.0])
+            positions *= np.array([self.width, self.height, 0.0])
 
-        size = np.array([self.width, self.height, 0.0])
-        positions = positions[:, ]*size
-        positions = positions[:, ] - size*np.array([0.5, 0.5, 0.0]) + self.offset
+        elif normal == 'x':
+            positions = np.array([[0.0, 0.0, 0.0],  # First triangle
+                                  [0.0, 1.0, 0.0],
+                                  [0.0, 0.0, 1.0],
+                                  [0.0, 1.0, 1.0],  # Second triangle
+                                  [0.0, 0.0, 1.0],
+                                  [0.0, 1.0, 0.0]], dtype=np.float32)
+            positions -= np.array([0.0, 0.5, 0.5])
+            positions *= np.array([0.0, self.width, self.height])
+
+        elif normal == 'y':
+            positions = np.array([[0.0, 0.0, 0.0],  # First triangle
+                                  [1.0, 0.0, 0.0],
+                                  [0.0, 0.0, 1.0],
+                                  [1.0, 0.0, 1.0],  # Second triangle
+                                  [0.0, 0.0, 1.0],
+                                  [1.0, 0.0, 0.0]], dtype=np.float32)
+            positions -= np.array([0.5, 0.0, 0.5])
+            positions *= np.array([self.width, 0.0, self.height])
+
+        else:
+            raise ValueError(f"Unexpected normal direction: {normal}.  Must be either 'x', 'y', or 'z'")
+
+        positions += self.offset
 
         # Rotate positions to match normal vector
         uv = np.array([[0.0, 0.0],  # First triangle
@@ -140,7 +163,6 @@ class ImageObject(BaseObject):
             // Get value from tex at this position
             // float value = texture(tex, FragPos).x;
             float value = texture(tex, FragPos).x;
-            vec3 color = colormap(1.9);
             
             // Convert to color using colormap and output
             FragColor = vec4(colormap(value), 1.0);
