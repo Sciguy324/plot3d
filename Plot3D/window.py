@@ -37,6 +37,12 @@ class QtGLWidget(qt.QOpenGLWidget):
         # OpenGL canvas
         self.canvas = Canvas(self.width(), self.height())
 
+        # Declare event timer
+        self.update_timer = qtc.QTimer(self)
+        self.update_timer.setInterval(1)
+        self.update_timer.timeout.connect(self.update)
+        self.update_timer.start()
+
     @property
     def time_delta(self) -> float:
         return self.time - self.previous_time
@@ -78,6 +84,7 @@ class QtGLWidget(qt.QOpenGLWidget):
 
     def mousePressEvent(self, event: qtg.QMouseEvent) -> None:
         """Set focus upon clicking widget"""
+        self.old_mouse_position = (event.x(), event.y())
         self.setFocus()
 
     def keyPressEvent(self, event: qtg.QKeyEvent) -> None:
@@ -101,6 +108,10 @@ class QtGLWidget(qt.QOpenGLWidget):
             self.move_state.direction |= Direction.down
         elif event.key() == qtc.Qt.Key_Q:
             self.move_state.slow = not self.move_state.slow
+
+        # Print debug info
+        elif event.key() == qtc.Qt.Key_P:
+            print(self.canvas.camera)
 
         # Return to home view
         elif event.key() == qtc.Qt.Key_H:
@@ -151,11 +162,11 @@ class QtGLWidget(qt.QOpenGLWidget):
             dt *= 0.5
 
         # Pivot view, reset pivot amount after
-        self.canvas.camera.rotateView(self.move_state.pan_rotate)
+        self.canvas.camera.rotateView(*self.move_state.pan_rotate)
         self.move_state.pan_rotate = (0, 0)
 
         # Pan view, reset pan amount after
-        self.canvas.camera.panView(self.move_state.pan_move)
+        self.canvas.camera.panView(*self.move_state.pan_move)
         self.move_state.pan_move = (0, 0)
 
         # Zoom view, reset zoom amount after
@@ -218,5 +229,5 @@ class QtWindow(qt.QMainWindow):
 
     def show(self):
         """Show the main viewing window"""
-        self.view_widget.canvas.resetView()
+        #self.view_widget.canvas.resetView()
         super().show()

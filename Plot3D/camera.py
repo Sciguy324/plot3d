@@ -18,16 +18,20 @@ __all__ = ["Direction",
 
 class Direction(IntFlag):
     """A simple enum representing a direction relative to the camera"""
-    forward = auto(int)
-    backward = auto(int)
-    left = auto(int)
-    right = auto(int)
-    up = auto(int)
-    down = auto(int)
+    forward = auto()
+    backward = auto()
+    left = auto()
+    right = auto()
+    up = auto()
+    down = auto()
 
 
 class Projection:
     """Base class for all projections onto the camera's view"""
+
+    def setSize(self, height: float, width: float):
+        """Adjusts the projection to match the provided viewport size.  Override in subclass"""
+        pass
 
     @property
     def matrix(self) -> np.ndarray:
@@ -40,8 +44,12 @@ class PerspectiveProjection(Projection):
     """Represents a perspective projection"""
     fov: float = 45.0          # Field of view, in degrees
     aspect: float = 1.0        # Aspect ratio of view
-    near_plane: float = 0.1    # Near cutoff plane
-    far_plane: float = 150.0   # Far cutoff plane
+    near_plane: float = 1e-1    # Near cutoff plane
+    far_plane: float = 1000.0   # Far cutoff plane
+
+    def setSize(self, height: float, width: float):
+        """Adjusts the projection to match the provided viewport size"""
+        self.aspect = width/height
 
     @property
     def matrix(self) -> np.ndarray:
@@ -60,14 +68,19 @@ class OrthographicProjection(Projection):
     width: float = 1.0         # Width of view
     height: float = 1.0        # Height of view
     near_plane: float = 0.1    # Near cutoff plane
-    far_plane: float = 150.0   # Far cutoff plane
+    far_plane: float = 250.0   # Far cutoff plane
+
+    def setSize(self, height: float, width: float):
+        """Adjusts the projection to match the provided viewport size"""
+        self.height = height
+        self.width = width
 
     @property
     def matrix(self) -> np.ndarray:
         """Returns the 4x4 matrix defining this projection"""
         return np.array([[2/self.width, 0.0, 0.0, 0.0],
                          [0.0, 2/self.height, 0.0, 0.0],
-                         [0.0, 0.0, -1//(self.far_plane-self.near_plane), 0.0],
+                         [0.0, 0.0, -1/(self.far_plane-self.near_plane), 0.0],
                          [0.0, 0.0, -self.near_plane/(self.far_plane-self.near_plane), 1.0]],
                         dtype=np.float32)
 
@@ -83,9 +96,9 @@ class Camera:
     theta: float = 0.0           # Camera rotation
     phi: float = 0.0             # Camera pitch
     zoom: float = 0.0            # Camera zoom exponent
-    pivot_dist: float = 5.0      # Distance between camera and pivot point
-    move_speed: float = 2.5      # Movement speed scale factor
-    pan_speed: float = 0.01      # Movement speed from panning
+    pivot_dist: float = 25.0      # Distance between camera and pivot point
+    move_speed: float = 25      # Movement speed scale factor
+    pan_speed: float = 0.1      # Movement speed from panning
     rotation_speed: float = 1.0  # Rotation speed
 
     @property

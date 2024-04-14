@@ -16,9 +16,9 @@ class Colormap:
         Constructor for colormaps
 
         Arguments:
-            source_array: 255x3 numpy array to build colormap from.  Color values should range from 0 to 1
+            source_array: 256x3 numpy array to build colormap from.  Color values should range from 0 to 1
         """
-        self.__cmap: np.ndarray = np.array(source_array).reshape(255, 3).astype(np.float32)
+        self.__cmap: np.ndarray = np.array(source_array).reshape(256, 3).astype(np.float32)
         self.__tex: int = -1
 
     def __call__(self, value):
@@ -66,29 +66,29 @@ class Colormap:
     @classmethod
     def fromRGBArray(cls, source_array: np.ndarray):
         """
-        Constructs a Colormap object from a (255x3) RGB array and returns the result
+        Constructs a Colormap object from a (256x3) RGB array and returns the result
 
         Arguments:
-            source_array: (255x3) numpy array to construct the colormap from
+            source_array: (256x3) numpy array to construct the colormap from
 
         Returns (Colormap): A colormap object
         """
         # Validate array, then build and return object
-        return cls(np.array(source_array, dtype=np.float32).reshape(255, 3))
+        return cls(np.array(source_array, dtype=np.float32).reshape(256, 3))
 
     @classmethod
     def fromRGBAArray(cls, source_array: np.ndarray):
         """
-        Constructs a Colormap object from a (255x4) RGBA array and returns the result.  The alpha channel will be
+        Constructs a Colormap object from a (256x4) RGBA array and returns the result.  The alpha channel will be
         dropped when the colormap is created.
 
         Arguments:
-            source_array: (255x4) numpy array to construct the colormap from
+            source_array: (256x4) numpy array to construct the colormap from
 
         Returns (Colormap): A colormap object
         """
         # Validate array
-        arr = np.array(source_array, dtype=np.float32).reshape(255, 4)
+        arr = np.array(source_array, dtype=np.float32).reshape(256, 4)
 
         # Build and return object
         return cls(arr[:, :3])

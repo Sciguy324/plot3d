@@ -49,7 +49,7 @@ class ImageObject(BaseObject):
         self.height: float = array.shape[0] if height is None else height
 
         self.vmin = np.min(self.array) if vmin is None else vmin
-        self.vmax = np.min(self.array) if vmax is None else vmax
+        self.vmax = np.max(self.array) if vmax is None else vmax
 
         # Generate triangles for rendering
         positions = np.array([[0.0, 0.0, 0.0],  # First triangle
@@ -88,6 +88,11 @@ class ImageObject(BaseObject):
         self.colormap = viridis if cmap is None else cmap
 
     @property
+    def effective_radius(self):
+        """Effective radius used when focusing on this object"""
+        return np.sqrt(self.width**2 + self.height**2)
+
+    @property
     def array(self) -> np.ndarray:
         return self.__array
 
@@ -114,16 +119,31 @@ class ImageObject(BaseObject):
         #version 430 core
         // Shader inputs and outputs
         out vec4 FragColor;
-        in vec3 FragPos;
+        in vec2 FragPos;
         in vec3 TexSize;
         
         // Uniforms
         uniform sampler1D cmap;
         uniform sampler2D tex;
 
+        vec3 colormap(float value)
+        {
+            // Clamp to allowed range [0.0-1.0]
+            value = clamp(value, 0.0, 1.0);
+            
+            // Convert value to color using cmap
+            return texture(cmap, value).xyz;
+        }
+
         void main()
         {
-            FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            // Get value from tex at this position
+            // float value = texture(tex, FragPos).x;
+            float value = texture(tex, FragPos).x;
+            vec3 color = colormap(1.9);
+            
+            // Convert to color using colormap and output
+            FragColor = vec4(colormap(value), 1.0);
         }
         """
 
@@ -131,13 +151,13 @@ class ImageObject(BaseObject):
     def getVertexShaderSource() -> str:
         """Returns the source code for the vertex shader"""
         return """\
-        #version 420 core
+        #version 430 core
         // Inputs provided by buffer objects
         layout (location = 0) in vec3 position;
         layout (location = 1) in vec2 uv;
 
         // Shader outputs
-        out vec3 FragPos;
+        out vec2 FragPos;
         
         // Uniforms
         uniform mat4 projection;
@@ -155,7 +175,7 @@ class ImageObject(BaseObject):
         """
         # Bind and set buffer to triangle data
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, 0, self.triangles.flatten(), gl.GL_STATIC_DRAW)
+        gl.glBufferData(gl.GL_ARRAY_BUFFER, self.triangles.size*self.triangles.itemsize, self.triangles.flatten(), gl.GL_STATIC_DRAW)
 
     def createTexture(self):
         """
@@ -185,14 +205,25 @@ class ImageObject(BaseObject):
 
     def initialize(self):
         """Initializes the object/class in OpenGL if it isn't already"""
-        # Standard initialization
-        super().initialize()
+        if self.initialized:  # Don't try to initialize more than once
+            return
 
-        # Set vertex object data
+        # Perform class initialization first, if not already done
+        self.class_initialize()
+
+        # Set buffer data
+        self.createBuffers()
         self.setBuffers()
-
-        # Set texture data
         self.setTexture(self.array)
+
+        # Set texture locations
+        cmap_loc = gl.glGetUniformLocation(self.shader_program, "cmap")
+        tex_loc = gl.glGetUniformLocation(self.shader_program, "tex")
+        gl.glUniform1i(cmap_loc, 0)
+        gl.glUniform1i(tex_loc, 1)
+
+        # Mark as initialized
+        self._initialized = True
 
     def createBuffers(self):
         """Creates the internal buffer objects used in the shader"""
@@ -228,7 +259,7 @@ class ImageObject(BaseObject):
 
     def render(self, camera: Camera, projection: Projection):
         """
-        Renders this objects onto the current OpenGL context
+        Renders this object onto the current OpenGL context
 
         Arguments:
             camera (Camera): Camera view object that the scene is rendered from the perspective of
@@ -238,12 +269,17 @@ class ImageObject(BaseObject):
         super().render(camera, projection)
 
         # Bind appropriate buffers
-        gl.glBindVertexArray(self.vao)
         gl.glActiveTexture(gl.GL_TEXTURE0)
         gl.glBindTexture(gl.GL_TEXTURE_1D, self.cmap_tex)
         gl.glActiveTexture(gl.GL_TEXTURE1)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.tex)
+
+        gl.glBindVertexArray(self.vao)
         gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vbo)
 
         # Draw triangles
+        # data = np.zeros(5, dtype=np.float32)
+        # gl.glGetBufferSubData(gl.GL_ARRAY_BUFFER, 0, 5, data)
+        # data = gl.glGetBufferSubData(gl.GL_ARRAY_BUFFER, 0, 20*6)
+        # print(data.view(np.float32).reshape(-1, 5))
         gl.glDrawArrays(gl.GL_TRIANGLES, 0, len(self.triangles))

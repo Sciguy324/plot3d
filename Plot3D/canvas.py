@@ -40,7 +40,8 @@ class Canvas:
 
     def resetView(self):
         """Resets the camera view"""
-        # TODO: Implement dimension calculation
+        # TODO: Implement PROPER focus calculation
+        radius = max(renderable.effective_radius for renderable in self.rendered_objects)
         self.camera.focusView([0.0, 0.0, 0.0], [200.0, 200.0, 200.0])
 
     @property
@@ -58,7 +59,7 @@ class Canvas:
 
     @background_color.setter
     def background_color(self, value: Tuple[float, float, float, float]):
-        self.background_color = (float(value[0]), float(value[1]), float(value[2]), float(value[3]))
+        self.__background_color = (float(value[0]), float(value[1]), float(value[2]), float(value[3]))
         # Pass along to OpenGL if initialized
         if self.initialized:
             gl.glClearColor(*self.background_color)
@@ -111,6 +112,7 @@ class Canvas:
         """Resizes the internal viewport"""
         self.width, self.height = width, height
         gl.glViewport(0, 0, self.width, self.height)
+        self.projection.setSize(height, width)
 
     def clearDrawn(self):
         """Clears the canvas of all rendered content"""

@@ -80,8 +80,8 @@ def zoom(scale: float) -> np.ndarray:
 
     Returns (np.ndarray): A numpy array containing a 4x4 scaling matrix
     """
-    return np.ndarray([[scale, 0.0, 0.0, 0.0],
-                       [0.0, scale, 0.0, 0.0],
-                       [0.0, 0.0, scale, 0.0],
-                       [0.0, 0.0, 0.0, scale]],
-                      dtype=np.float32)
+    return np.array([[scale, 0.0, 0.0, 0.0],
+                     [0.0, scale, 0.0, 0.0],
+                     [0.0, 0.0, scale, 0.0],
+                     [0.0, 0.0, 0.0, 1.0]],
+                    dtype=np.float32)

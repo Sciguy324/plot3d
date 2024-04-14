@@ -18,11 +18,16 @@ class BaseObject:
     __current_projection: np.ndarray = np.identity(4)
 
     def __init__(self):
-        self.__initialized: bool = False
+        self._initialized: bool = False
+
+    @property
+    def effective_radius(self):
+        """Effective radius used when focusing on this object"""
+        return 1.0
 
     @property
     def initialized(self):
-        return self.__initialized
+        return self._initialized
 
     @classmethod
     def class_initialized(cls):
@@ -31,6 +36,10 @@ class BaseObject:
     @property
     def shader_program(self) -> int:
         return self.__shader_program
+
+    @classmethod
+    def get_shader_program(cls) -> int:
+        return cls.__shader_program
 
     @staticmethod
     def getFragmentShaderSource() -> str:
@@ -51,12 +60,9 @@ class BaseObject:
     def getVertexShaderSource() -> str:
         """Returns the source code for the vertex shader"""
         return """\
-        #version 420 core
+        #version 430 core
         // Inputs provided by buffer objects
         layout (location = 0) in vec3 position;
-        
-        // Shader outputs
-        out vec3 FragPos;
         
         // Uniforms
         uniform mat4 projection;
@@ -65,7 +71,6 @@ class BaseObject:
         void main()
         {
             gl_Position = projection * view * vec4(position, 1.0);
-            FragPos = position;
         }
         """
 
@@ -81,6 +86,8 @@ class BaseObject:
 
         # Validate program
         gl.glValidateProgram(shader_program)
+        gl.glLinkProgram(shader_program)
+        gl.glUseProgram(shader_program)
 
         # Return program pointer
         return shader_program
@@ -93,6 +100,9 @@ class BaseObject:
 
         # Compile shader programs
         cls.__shader_program = cls.compileShaders()
+
+        # Mark class as initialized
+        cls.__class_initialized = True
 
     def setBuffers(self):
         """
@@ -109,11 +119,11 @@ class BaseObject:
         if self.initialized:  # Don't try to initialize more than once
             return
 
-        # Create buffer objects
-        self.createBuffers()
-
         # Perform class initialization first, if not already done
         self.class_initialize()
+
+        # Create buffer objects
+        self.createBuffers()
 
     @classmethod
     def setProjectionUniform(cls, projection: Projection):
@@ -123,17 +133,20 @@ class BaseObject:
         if np.all(matrix == cls.__current_projection):
             return
 
+        cls.__current_projection = matrix
         # Locate projection uniform in shader and set it
-        gl.glUseProgram(cls.shader_program)
-        loc = gl.glGetUniformLocation(cls.shader_program, 'projection')
-        gl.glUniformMatrix4fv(loc, 1, gl.GL_FALSE, matrix.flatten())
+        gl.glUseProgram(cls.get_shader_program())
+        loc = gl.glGetUniformLocation(cls.get_shader_program(), 'projection')
+        if loc != -1:
+            gl.glUniformMatrix4fv(loc, 1, gl.GL_FALSE, matrix.flatten())
 
     @classmethod
     def setCameraUniform(cls, camera: Camera):
         """Sets the camera uniform to match the provided camera object"""
-        gl.glUseProgram(cls.shader_program)
-        loc = gl.glGetUniformLocation(cls.shader_program, 'view')
-        gl.glUniformMatrix4fv(loc, 1, gl.GL_FALSE, camera.matrix.flatten())
+        gl.glUseProgram(cls.get_shader_program())
+        loc = gl.glGetUniformLocation(cls.get_shader_program(), 'view')
+        if loc != -1:
+            gl.glUniformMatrix4fv(loc, 1, gl.GL_TRUE, camera.matrix.flatten())
 
     def render(self, camera: Camera, projection: Projection):
         """
@@ -143,6 +156,10 @@ class BaseObject:
             camera (Camera): Camera view object that the scene is rendered from the perspective of
             projection (Projection): Projection to use to case 3D space onto a 2D plane
         """
+        # Initialize if not already initialized
+        if not self.initialized:
+            self.initialize()
+
         # Use shader program
         gl.glUseProgram(self.shader_program)
 
@@ -150,5 +167,5 @@ class BaseObject:
         self.setCameraUniform(camera)
         self.setProjectionUniform(projection)
 
-        # Further rendering done in subclass
+        # Further rendering done in subclasses
         pass
