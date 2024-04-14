@@ -121,7 +121,7 @@ class BaseCrossSection(BaseObject):
     def getFragmentShaderSource() -> str:
         """Returns the source code for the fragment shader"""
         return """\
-        #version 430 core
+        #version 410 core
         // Shader inputs and outputs
         out vec4 FragColor;
         in vec3 FragPos;
@@ -154,7 +154,7 @@ class BaseCrossSection(BaseObject):
     def getVertexShaderSource() -> str:
         """Returns the source code for the vertex shader"""
         return """\
-        #version 430 core
+        #version 410 core
         // Inputs provided by buffer objects
         layout (location = 0) in vec3 position;
         layout (location = 1) in vec3 uvw;

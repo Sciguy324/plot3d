@@ -208,7 +208,7 @@ class QtWindow(qt.QMainWindow):
     def __init__(self, *args, **kwargs):
         # Set default OpenGL format
         fmt = qtg.QSurfaceFormat()
-        fmt.setVersion(4, 3)
+        fmt.setVersion(4, 1)
         fmt.setProfile(qtg.QSurfaceFormat.CoreProfile)
         fmt.setSwapInterval(0)
         qtg.QSurfaceFormat.setDefaultFormat(fmt)
