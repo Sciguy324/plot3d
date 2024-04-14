@@ -187,28 +187,31 @@ class Camera:
         if Direction.down & direction:
             self.y -= delta
 
-    def focusView(self, center: Tuple[float, float, float], dimensions: Tuple[float, float, float]):
+    def focusView(self, center: Tuple[float, float, float], radius: float):
         """
         Resets the camera to focus on an object
 
         Arguments:
             center (Tuple[float, float, float]): 3-tuple of coordinates to focus pivot on
-            dimensions (Tuple[float, float, float]): 3-tuple of coordinates to try to contain within view
+            radius (float): Radius of the region to focus on
         """
-        # FIXME: Make this function more reliable
         # Move camera to focus on center of mass
         self.cam_pos = center
 
+        # Set camera angle
+        self.theta, self.phi = 315.0, 45.0
+
         # Compute a better zoom that fits the structure
-        self.zoom = np.log10(np.max(dimensions)/2)
+        scale = radius / self.pivot_dist * 1.5
+        self.zoom = np.log10(scale)
 
     @property
     def matrix(self) -> np.ndarray:
         """Builds and returns the transformation matrix for the camera view"""
         transform = np.identity(4)
         transform = transform @ translate(0.0, 0.0, -self.pivot_dist)
-        transform = transform @ rotateX(np.radians(self.phi))
-        transform = transform @ rotateY(np.radians(self.theta))
+        transform = transform @ rotateX(float(np.radians(self.phi)))
+        transform = transform @ rotateY(float(np.radians(self.theta)))
         transform = transform @ zoom(1/self.scale)
         transform = transform @ translate(0.0, 0.0, self.pivot_dist)
         transform = transform @ translate(-self.x, -self.y, -self.z)
@@ -254,4 +257,3 @@ class Camera:
             "pan_speed": self.pan_speed,
             "rotation_speed": self.rotation_speed
         }
-

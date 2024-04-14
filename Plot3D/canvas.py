@@ -40,9 +40,8 @@ class Canvas:
 
     def resetView(self):
         """Resets the camera view"""
-        # TODO: Implement PROPER focus calculation
         radius = max(renderable.effective_radius for renderable in self.rendered_objects)
-        self.camera.focusView([0.0, 0.0, 0.0], [200.0, 200.0, 200.0])
+        self.camera.focusView([0.0, 0.0, 0.0], radius)
 
     @property
     def projection(self) -> Projection:
