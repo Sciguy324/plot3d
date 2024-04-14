@@ -5,7 +5,6 @@ Example script for creating and showing a 3D plot
 from Plot3D import figure
 import PyQt5.QtWidgets as qt
 from sys import argv
-from Plot3D.objects import ImageObject
 from Plot3D.objects import ExteriorBoxSection
 import numpy as np
 
