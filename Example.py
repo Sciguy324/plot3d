@@ -20,7 +20,6 @@ window, canvas = figure()
 X, Y = np.meshgrid(np.linspace(0, 1, 100), np.linspace(0, 1, 200))
 image = ImageObject(X, (0.0, 0.0, 1.0), (0.0, 0.0, 0.0))
 canvas.addObject(image)
-canvas.resetView()
 
 # Show plot
 window.show()

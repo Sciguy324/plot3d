@@ -229,5 +229,5 @@ class QtWindow(qt.QMainWindow):
 
     def show(self):
         """Show the main viewing window"""
-        #self.view_widget.canvas.resetView()
+        self.view_widget.canvas.resetView()
         super().show()
