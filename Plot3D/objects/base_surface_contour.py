@@ -146,7 +146,7 @@ class BaseCrossSection(BaseObject):
             float value = texture(field, FragPos).x;
             
             // Convert to color using colormap and output
-            FragColor = vec4(value.x, 1.0, 0.0, 1.0);
+            FragColor = vec4(colormap(value), 1.0);
         }
         """
 

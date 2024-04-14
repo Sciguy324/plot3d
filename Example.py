@@ -5,7 +5,7 @@ Example script for creating and showing a 3D plot
 from Plot3D import figure
 import PyQt5.QtWidgets as qt
 from sys import argv
-from Plot3D.objects import ExteriorBoxSection
+from Plot3D.objects import ExteriorBoxSection, InteriorBoxSection
 import numpy as np
 
 # Qt application
@@ -21,7 +21,7 @@ vmin, vmax = F.min(), F.max()
 #canvas.addObject(ImageObject(F[50], (0.0, 0.0, 0.0), 'x', vmin=vmin, vmax=vmax))
 #canvas.addObject(ImageObject(F[:, 50], (0.0, 0.0, 0.0), 'y', vmin=vmin, vmax=vmax))
 #canvas.addObject(ImageObject(F[:, :, 50], (0.0, 0.0, 0.0), 'z', vmin=vmin, vmax=vmax))
-canvas.addObject(ExteriorBoxSection(F, (0.0, 0.0, 0.0)))
+canvas.addObject(InteriorBoxSection(F, (0.0, 0.0, 0.0)))
 
 # Show plot
 window.show()
