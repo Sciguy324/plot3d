@@ -24,7 +24,7 @@ class BaseCrossSection(BaseObject):
         """
         Arguments:
             array (np.ndarray): A 3D numpy array containing the image to show
-            offset (Tuple[float, float, float]): Location of the lowermost corner of the box
+            offset (Tuple[float, float, float]): Location of the center of the box
             x_size (float): X-size of rendered box.  Defaults to `array.shape[0]` if not provided
             y_size (float): Y-size of rendered box.  Defaults to `array.shape[1]` if not provided
             z_size (float): Z-size of rendered box.  Defaults to `array.shape[2]` if not provided
@@ -57,7 +57,7 @@ class BaseCrossSection(BaseObject):
 
         # Generate triangles for rendering
         uvw = self.base_model()
-        positions = uvw + self.offset
+        positions = uvw - np.array([0.5, 0.5, 0.5]) + self.offset
 
         self.triangles = np.zeros((len(positions), 6), dtype=np.float32)
         self.triangles[:, 0] = positions.T[0]*self.x_size
