@@ -3,10 +3,12 @@ This module contains the rendering code for OpenGL-based rendering
 """
 # Import modules
 from typing import List, Tuple
+from time import time
 import numpy as np
 import OpenGL.GL as gl
 from .camera import Camera, Projection, PerspectiveProjection
 from .objects.base import BaseObject
+from .animation import Animation
 
 
 class Canvas:
@@ -27,8 +29,10 @@ class Canvas:
 
         # Object data
         self.rendered_objects: List[BaseObject] = []
+        self.animations: List[Animation] = []
 
         # Initialize view
+        self.start_time: float = time()
         self._projection = None
         self.camera = None
         self.initView()
@@ -107,6 +111,14 @@ class Canvas:
         """Removes all renderable objects from the canvas"""
         self.rendered_objects = []
 
+    def addAnimation(self, animation: Animation):
+        """Adds an animation function to the canvas"""
+        self.animations.append(animation)
+
+    def clearAnimations(self):
+        """Clears all animation functions from the canvas"""
+        self.animations = []
+
     def resize(self, width: float, height: float):
         """Resizes the internal viewport"""
         self.width, self.height = width, height
@@ -125,6 +137,10 @@ class Canvas:
 
         # Clear screen
         self.clearDrawn()
+
+        # Execute animation functions
+        for animation in self.animations:
+            animation(time() - self.start_time)
 
         # Draw all renderable objects
         for renderable in self.rendered_objects:

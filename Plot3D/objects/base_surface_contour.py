@@ -101,6 +101,22 @@ class BaseCrossSection(BaseObject):
     def array(self) -> np.ndarray:
         return self.__array
 
+    @array.setter
+    def array(self, new_array: np.ndarray):
+        # Enforce type
+        new_array = np.array(new_array).astype(self.__array.dtype)
+
+        # Check if shapes match
+        # FIXME: It might not be strictly necessary to enforce the same shape...
+        if new_array.shape != self.__array.shape:
+            raise ValueError(f"Array shape does not match internal array (expected {self.__array.shape}, got {new_array.shape})")
+        
+        # Set internal array and update texture if initialized
+        self.__array = new_array
+        if self.initialized:
+            self.setTexture(self.array)
+
+
     @property
     def vao(self) -> int:
         return self.__vao
